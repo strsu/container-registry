@@ -1,0 +1,44 @@
+version: '3.7'
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN=${CF_TOKEN}
+    command: tunnel --no-autoupdate run
+
+  registry-auth-init:
+    image: httpd:2.4-alpine
+    container_name: registry-auth-init
+    environment:
+      - REGISTRY_USERNAME=${REGISTRY_USERNAME:-LOGIN_ID}
+      - REGISTRY_PASSWORD=${REGISTRY_PASSWORD:-PASSWORD}
+    volumes:
+      - ./auth:/auth
+    command: >
+      sh -c "
+        mkdir -p /auth &&
+        htpasswd -Bbn $${REGISTRY_USERNAME} $${REGISTRY_PASSWORD} > /auth/htpasswd &&
+        chmod 644 /auth/htpasswd &&
+        echo 'htpasswd 파일이 생성되었습니다.' &&
+        cat /auth/htpasswd
+      "
+    restart: "no"
+
+  registry:
+    container_name: registry
+    image: registry:2
+    restart: unless-stopped
+    depends_on:
+      - registry-auth-init
+    # ports:
+    #   - 5000:5000
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - ./data:/var/lib/registry
+      - ./config.yml:/etc/docker/registry/config.yml:ro
+      - ./auth:/auth
