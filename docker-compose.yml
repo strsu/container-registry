@@ -38,6 +38,7 @@ services:
       REGISTRY_AUTH: htpasswd
       REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_STORAGE_MAINTENANCE_UPLOADPURGING_ENABLED: "false" # 레지스트리가 수용하는 데이터 조각의 단위를 제한하여 클라이언트가 작게 보내도록 유도
     volumes:
       - ./data:/var/lib/registry
       - ./config.yml:/etc/docker/registry/config.yml:ro
